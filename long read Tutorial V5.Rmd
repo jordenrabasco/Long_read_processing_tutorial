@@ -41,9 +41,7 @@ of nine human fecal samples, from 3 different subjects. Additionally pacbio sequ
 
 ##  Initial Set up
 
-In the initial set up we will have to prep the reads for filtering and primer trimming. To carry out the preprocessing steps prior to the dada2 workflow, run the below code at the command line. This will convert the bam file into a fastq file that can then be further analyzed downstream, by this workflow. 
-
-ccs --pbi --force --logLevel=DEBUG --numThreads=16 --minSnr=3.75 --minReadScore=0.65 --maxLength=7000 --minLength=10 --minPasses=3 --minZScore=-5 --maxDropFraction=0.34 --minPredictedAccuracy=0.999 subreads.bam ccs.bam
+In the initial set up we will have to prep the reads for filtering and primer trimming. When working with the sample data you don't need to be concerned with the following step and can move onto the next section as the reads are already preprocessed. To carry out the preprocessing steps prior to the dada2 workflow, you will need to use Pacbio software to convert multiplexed ccs reads into fastq files that can then be used in the following tutorial. Recommend settings for this preprocessing step are: --numThreads=16 --minSnr=3.75 --minReadScore=0.65 --maxLength=7000 --minLength=10 --minPasses=3 --minZScore=-5 --maxDropFraction=0.34 --minPredictedAccuracy=0.999
 
 Prior to any R processing please make sure to install dada2 appropriately as well as the dependencies. The appropriate information can be found here: <https://benjjneb.github.io/dada2/dada-installation.html>
 
@@ -53,7 +51,7 @@ library("devtools")
 devtools::install_github("benjjneb/dada2", ref="v1.20")
 ```
 
-Once dada2 is installed load the library and check the version. Make sure thea you are using the latest version of dada2 as some fixes may have been implemented in later releases. This tutorial ultitzes version 1.20.0 of the dada2 package.
+Once dada2 is installed load the library and check the version. Make sure that you are using the latest version of dada2 as some fixes may have been implemented in later releases. This tutorial utilizes version 1.20.0 of the dada2 package.
 ```{r, message = FALSE, warning = FALSE}
 library(dada2);packageVersion("dada2")
 ```
@@ -75,16 +73,16 @@ library(MatrixGenerics);packageVersion("MatrixGenerics")
 
 ## Pathing setup
 
-This section sets up the pathing for the tutorial and its output. When you first download the tutorial zip file, you will need to change the "base_path" variable to wherever the tutorial zip file is downloaded too. 
-Note: When running your own data through this tutorial, it would be prudent to set up your data in the "data" folder of the tutorial while removing the test data present in there. This will prevent any needless errors from pathing to occur. 
+This section sets up the pathing for the tutorial and its output. When you first download the tutorial zip file, you will need to change the "base_path" variable to wherever the tutorial zip file is downloaded to. 
+Note: When running your own data through this tutorial, it would be prudent to set up your data in the "data" folder of the tutorial and remove the test data present in there. This will prevent any needless errors from altered pathing to occur. 
 ```{r Pathing Set-up Change, message = FALSE, warning = FALSE}
-base_path <- "C:/Users/jorde/OneDrive/Desktop" #Informs all other pathing in the tutorial
+base_path <- "C:/Users/jorde/OneDrive/Desktop/github/Long_read_processing_tutorial" #Informs all other pathing in the tutorial
 ```
 
 
 ## Identification of Primers
  
-In this section we need to input the primer information and initalize the rc funciton from the dada2 package. 
+In this section we need to input the primer information and initialize the rc funciton from the dada2 package. 
 Note: After you have concluded the tutorial you will need to change "FW_pacbio" and "Rev_pacbio" to the appropriate primers used in your Pacbio sequencing.
 ```{r Pacbio 1) Pathing Primer Identification, message = FALSE, warning = FALSE}
 Fw_pacbio<- "AGRGTTYGATYMTGGCTCAG" #change to fw primer in sequencing
@@ -96,7 +94,7 @@ theme_set(theme_bw())
 
 ## Filtering and Primer Removal
 
-Here we will be removing the primers and filtering out poor qulaity reads. We want to remove the primers as they were not part of the original sequence and thus can alter and return wrong ASVs or taxonomic assinments. Furthermore, when you have your reads in a fastq style format which was generated in the first step of this workflow, each read has both an id and a sequence of quality indicators. These indicators show how sure we are that each base was identified correctly. That is to say that with low quality bases some abiguity in the idenity of the base, in that position is inherrent. Therefore, we want to filter out these poor quality reads from reads that have a higher quality to ensure that the results are accurate. These two steps will ensure the quality of the reads and assist in downstream taxonomic assignments. Additionally, Pacbio read orientation is mixed, meaning that some reads are in the 3' to 5' orientaiton and some are in the 5' to 3' orientation. This is corrected in the primer removal step. We will also want to vizualize the length of the seqeuences after trimming to ensure that the sequences are predominently of the lengths that we expect. 
+Here we will be removing the primers and filtering out poor quality reads. We want to remove the primers as they were not part of the original sequence and thus can alter and return wrong ASVs or taxonomic assignments. Furthermore, when you have your reads in a fastq style format which is what is assumed in this workflow, each read has both an id and a sequence of quality indicators. These indicators show how sure we are that each base was identified correctly. That is to say that with low quality bases some ambiguity in the identity of the base, in that position is inherent. Therefore, we want to filter out these poor quality reads from reads that have a higher quality to ensure that the results are accurate. These two steps will ensure the quality of the reads and assist in downstream taxonomic assignments. Additionally, HiFi read orientation is mixed, meaning that some reads are in the 3' to 5' orientation and some are in the 5' to 3' orientation. This is corrected in the primer removal step, where all the reads are made to be in the same orientation. Due to this mixed orientation we will also need to reverse complement the reverse primer which can be seen in the "removePrimers" step. This is done as when the DNA amplicon is being generated the reverse primer attaches to the template DNA on the opposite strand which is in the reverse complement orientation. This means that to identify the reverse primer location we will need to look for the reverse complement of it. To ensure quality and to act as a sanity check we will want to visualize the length of the sequences after trimming to ensure that the sequences are predominantly of the lengths that we expect. 
 ```{r Pacbio 2) Filtering and Primer Removal Pacbio, message = FALSE, warning = FALSE}
 path<-file.path(base_path, "v5_long_read_tutorial/data")#sets locaiton of data for input into workflow
 #The below code allows all files with the "pattern" suffix to be found in the path1 or path2 folder location
@@ -109,39 +107,39 @@ hist(lens, 100) #generates plot of sequences after primer removal
 ```
 There is a strong peak around 1450, so that looks good. Next we are going to filter the reads for quality.
 
+
 ```{r Pacbio 2) read tracking, message = FALSE, warning = FALSE}
 filt <- file.path(base_path,"v5_long_read_tutorial/Pacbio/filtered", basename(fn_r)) #generates file in the filtered folder
 track <- filterAndTrim(nop, filt, minQ=3, minLen=1000, maxLen=1600, maxN=0, rm.phix=FALSE, maxEE=2)
 track
 ```
-Given in the table are the reads fed into the filtering step and the output reads after the filtering step. If the numbers in each column are the same then no reads were removed due to quality, however, it is not uncommon that a few reads will be removed due to quality concerns. 
+Given in the table are the reads fed into the filtering step and the output reads after the filtering step. If the numbers in each column are the same then no reads were removed due to quality, however, it is not uncommon that a few reads will be removed due to quality concerns. Note: when running your own data you will need to change parameters "minLen" and "maxLen" to encompass the length range of your expected amplicon. This will filter out any reads that have significant replication errors or vast changes in the content of the amplicon. 
 
 
 ## Denoising
 
-The next step is arguable the most important part of the tutorial; denoising via dada2 package. This was already loaded into the R environment in the beginning of the workflow so there is no need to worry. We will also want to produce error plots and an ASV table which we can then use for taxonomic assingment. The first step in this process is to 
-dereplicate amplicon sequences. Then we will learn error rates, save them in an R object, and plot the output error graph. If for any reason you need to stop the tutorial, the R object can then be loaded in and the workflow continued from this step.
-To check to see if the sequences were dereplicated correcly we can look at some of the unique sequence counts in the one of the samples.
+The next step is arguable the most important part of the tutorial; denoising via dada2 package. This was already loaded into the R environment in the beginning of the workflow so there is no need to worry. We will also want to produce error plots and an ASV table which we can then use for taxonomic assignment. The first step in this process is to dereplicate amplicon sequences. Then we will learn error rates, save them in an R object, and plot the output error graph. If for any reason you need to stop the tutorial, the R object can then be loaded in and the workflow continued from this step.
+To check to see if the sequences were dereplicated correctly we can look at some of the unique sequence counts in one of the samples.
 ```{r Pacbio 3A) Denoising Pacbio pt1, message = FALSE, warning = FALSE}
 drp <- derepFastq(filt, verbose=TRUE)
 head(drp$R11_1_P3C3.fastq.gz$uniques)
 ```
-As we can see the list of unique sequences and their counts were generated. We can also see that there is a signifigant relative abundance of these unique sequences. This allows the "learnerrors" module to run approriatly. If there wasn't enough abundance of unique reads than the error model wouldn't succeed. However this doesn't seem to be the case here and we can therefore assume that the dereplicaiton procedure was a success! If you wish to check the other samples you can switch the sample name in the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to whichever sample you would like to view. 
+As we can see the list of unique sequences and their counts were generated. We can also see that there is a significant relative abundance of these unique sequences. This allows the "learnerrors" module to run appropriately. If there wasn't enough abundance for each unique amplicon then the error model wouldn't run correctly. However, this doesn't seem to be the case here and we can therefore assume that the dereplicaiton procedure was a success! If you wish to check the other samples you can switch the sample name in the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to whichever sample you would like to view. 
 
-The DADA2 algorithm makes use of a parametric error model (err) and every amplicon dataset has a different set of error rates. The "learnErrors" method learns this error model from the data, by alternating estimation of the error rates and inference of sample composition until they converge on a jointly consistent solution. As in many machine-learning problems, the algorithm must begin with an initial guess, for which the maximum possible error rates in this data are used (the error rates if only the most abundant sequence is correct and all the rest are errors).
+The DADA2 algorithm makes use of a parametric error model (err) which generates different sets of error rates for every amplicon in the dataset. The "learnErrors" method learns this error model from the data, by alternating the estimation of the error rates and conducting an inference of sample composition until they converge on a jointly consistent solution. As in many machine-learning problems, the algorithm must begin with an initial guess, for which the maximum possible error rates for this data are present (the error rates in the case where the most abundant sequence is correct and all the rest of the sequences are errors).
 ```{r Pacbio 3B) Denoising Pacbio pt2, message = FALSE, warning = FALSE}
 err <- learnErrors(drp, errorEstimationFunction=PacBioErrfun, BAND_SIZE=32, multithread=TRUE) # 10s of seconds
 saveRDS(err, file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_err.rds"))
 plotErrors(err)
 ```
 
-The error rates for each possible transition (A→C, A→G, …) are shown in the plot above. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorith. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected. Everything looks reasonable and we proceed with confidence.
+The error rates for each possible transition (A→C, A→G, …) are shown in the plot above. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorithm. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected. Everything looks reasonable and we proceed with confidence.
 
-Now that the error rates are learned we will finally run the star of the show dada2; utilizing both of the output files generated from our previous steps. There are a myriad of options included in the dada2 package, the most important of which are included in the step below but in the negative (option is not turned on). To turn on these options follow the directions included in the description of each of the options below.  
-The first of the afore mentioned options is the "pool" option. In this option you can decide whether or not to pool your samples when running dada2. This allows for sharing information across samples and can increase the specificity of the dada2 algorithm to resolve ASVs that maybe in low abundance. In order to turn on this option you will need to change "pool=FALSE" to "pool=TRUE". You can also use the option "pool=psuedo", which inputs all ASVs detected in at least two samples in the first sample processing step as priors to the second step.
-Another option to mention is the "OMEGA_A" option which sets the threshold for when DADA2 calls unique sequences significantly overabundant, and therefore creates a new partition with that sequence as the center. Default is 1e-40, which is a conservative setting to avoid making false positive inferences, but which comes at the cost of reducing the ability to identify some rare variants. To change this parameter to be less conservative and more sensitive to detecting rare variants change the number in "OMEGA_A=(1*10^-40)" to a larger number. 
-The last option that we will mention here is "DETECT_SINGLETONS", which allows reporting ASVs which originated from more one read (default is to only report ASVs that originate from 2 or more reads). This will increase the sensitivity of the dada2 algorithm particularly in low abundance environments. To turn this option on change "DETECT_SINGLETONS=FALSE" to "DETECT_SINGLETONS=TRUE". 
-For more indepth information regarding these options you can read the dada2 documentation found here: <https://www.bioconductor.org/packages/devel/bioc/manuals/dada2/man/dada2.pdf>
+Now that the error rates are learned we will finally run the star of the show dada2; utilizing both of the output R objects generated from our previous steps. There are a myriad of options included in the dada2 package, the most important of which are included in the description below but in the negative (option is not turned on). To turn on these options follow the directions included in the description of each of the options.  
+The first of the a fore mentioned options is the "pool" option. In this option you can decide whether or not to pool your samples when running dada2. This allows for sharing information across samples and can increase the specificity of the dada2 algorithm to resolve ASVs that maybe in low abundance. In order to turn on this option you will need to change "pool=FALSE" to "pool=TRUE". You can also use the option "pool=psuedo", which inputs all ASVs detected in at least two samples in the first sample processing step as priors to the second step.
+Another option to mention is the "OMEGA_A" option which sets the threshold for when DADA2 calls unique sequences significantly overabundant, and therefore creates a new partition with that sequence as the center. Default is 1e-40, which is a conservative setting to avoid making false positive inferences, but which comes at the cost of reducing the ability to identify some rare variants. To change this parameter to be less conservative and more sensitive to detecting rare variants change the number in "OMEGA_A=(1*10^-40)" to a larger number.
+The last option that we will mention here is "DETECT_SINGLETONS", which toggles reporting of ASVs which originated from one read (default is to only report ASVs that originate from 2 or more reads). When turned on this option will increase the sensitivity of the dada2 algorithm particularly in low abundance environments. To turn this option on change "DETECT_SINGLETONS=FALSE" to "DETECT_SINGLETONS=TRUE". 
+For more in-depth information regarding these options you can read the dada2 documentation found here: <https://www.bioconductor.org/packages/devel/bioc/manuals/dada2/man/dada2.pdf>
 For examples of how these options work you can look at the sensitivity dada2 workflow found here:
 <https://benjjneb.github.io/dada2/pseudo.html>
 ```{r Pacbio 4) Denoising Pacbio pt3, message = FALSE, warning = FALSE}
@@ -150,23 +148,23 @@ saveRDS(dd, file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_dd.rds"
 cbind(ccs=prim[,1], primers=prim[,2], filtered=track[,2], denoised=sapply(dd, function(x) sum(x$denoised)))
 st <- makeSequenceTable(dd); dim(st)
 ```
-As you can see the output table above includes read tracking, such as read numbers for ccs, primer containing, filtered, and denoised reads.
+As you can see the output table above shows the read tracking through the various steps of the workflow up until this point, such as read numbers for ccs, primer containing, filtered, and denoised reads.
 
 ## Identifying and Removing chimeras
 
-While the core dada method corrects substitution and indel errors, chimeras still remain. Fortunately, the accuracy of sequence variants after denoising makes identifying chimeric ASVs simpler than when dealing with fuzzy OTUs. First we need to identify how many if any bimeras ther are, as well as the percentage of them in the overall reads:
+While the core dada method corrects substitution and indel errors, chimeras still remain. Fortunately, the accuracy of sequence variants after denoising makes identifying chimeric ASVs simpler than when dealing with fuzzy OTUs. First we need to identify how many bimeras there are (if any), as well as the percentage of them in the overall reads:
 ```{r Pacbio 5) Bimera identification, message = FALSE, warning = FALSE}
 bim <- isBimeraDenovo(st, minFoldParentOverAbundance=3.5) 
 # Higher MFPOA to avoid flagging intra-genomic variants
 table(bim)
 sum(st[,bim])/sum(st)
 ```
-As you can see there are 38 bimera present in the dataset, which comes out to a 0.6316% bimera rate in the reads.
+As you can see there are 38 bimera present in the dataset, which comes out to a 0.6316% bimera rate in the reads. A relatively low bimera rate is not to be unexpected and you should only worry if the bimera rate is relatively high
 
 
 ## Assigning Taxonomy
 
-Now that we have processed our data via dada2, we can plot and pull some interesting conclusions from the data. The first thing to be done is assign taxonomic assignments to the generated ASVs. This is done by utilizing the assignTaxonomy method inate to the dada2 package. This method uses trained data to inform the algorithm which taxa belong to which taxonomic assignments. To accomplish this we need a source taxonomy file which for this sample dadset can be found here: <https://zenodo.org/record/801832/files/silva_nr_v128_train_set.fa.gz?download=1>. You will then have to move this file into the tax folder found in the tutorial folder. 
+Now that we have processed our data via dada2, we can plot and pull some interesting conclusions from the data. The first thing to be done is assign taxonomic assignments to the generated ASVs. This is done by utilizing the assignTaxonomy method innate to the dada2 package. This method uses trained data to inform the algorithm which taxa belong to which taxonomic assignments. To accomplish this we need a source taxonomy file which for this sample dataset can be found here: <https://zenodo.org/record/801832/files/silva_nr_v128_train_set.fa.gz?download=1>. You will then have to move this file into the tax folder found within the tutorial folder. 
 Then we run the main function and voilà! We have taxonomies!
 ```{r Pacbio 6) Assigning Taxonomy Pacbio, message = FALSE, warning = FALSE}
 tax_path <- file.path(base_path, "v5_long_read_tutorial/tax/silva_nr_v128_train_set.fa.gz")
@@ -178,7 +176,7 @@ head(unname(tax))
 
 ## Data Management
 
-In this next section we will be extracting the file sample names for downstream visulaizations and then saving the processed data as R objects for future analyis. This will allow easy access for furture workflows. 
+In this next section we will be extracting the file sample names for downstream visualizations and then saving the processed data as R objects for future analysis. This will allow easy access for future workflows. 
 
 ```{r Pacbio 7) Data clean up Pacbio, message = FALSE, warning = FALSE}
 sample.names <- sapply(strsplit(fn_r, "/"), function(x) paste(x[length(x)], sep="_"))
@@ -219,7 +217,7 @@ head(df)
 
 ## Inspect E.coli
 
-In the mock community datasets, we resolved the full complement of 16S sequence variants in E. coli and used them to precisely classify those E. coli strains as O157:H7 and K-12. Let’s see if we can achieve similar reconstruction of E. coli strains in these real fecal samples. This is done by retreiving the sequences and then checking the sequences against their taxonomic assinments. This is then printed out in a tabular format. 
+In this tutorial dataset let’s see if we can achieve reconstruction of E. coli strains. This is done by retrieving the sequences of the ASVs and then checking those sequences against their taxonomic assignments. This is then printed out in a tabular format. 
 ```{r Pacbio 9) Identify Ecoli sequences Pacbio, message = FALSE, warning = FALSE}
 sq <- getSequences(st)
 is.ecoli <- tax[,"Genus"] %in% "Esherichica/Shigella"
@@ -227,9 +225,9 @@ sqec <- sq[is.ecoli]
 which(is.ecoli)
 rowSums(st[,is.ecoli]>0)
 ```
-There are several ASVs that are identified as E.coli but since we expect 3-6 unique alleles per strain that probably only represents 3-4 strains. 
+There are several ASVs that are identified as E.coli but since we expect 3-6 unique alleles per strain, there are probably only 3-4 strains present. 
 
-Now we can vizualize the distribution of the E.coli variants
+Now we can visualize the distribution of the E.coli variants
 ```{r Pacbio 8) Visualize Ecoli distribution Pacbio, message = FALSE, warning = FALSE}
 ecdf <- data.frame(st[,is.ecoli])
 names(sqec) <- paste0("Ec", seq(ncol(ecdf)))
@@ -240,7 +238,7 @@ ecm <- melt(ecdf, id.vars="Sample", value.name="Abundance", variable.name="Seque
 plot<-ggplot(data=ecm, aes(x=Sample, y=Abundance, color=SequenceVariant)) + geom_point()
 plot+theme(axis.text = element_text(size = 8))
 ```
-Very clear 3:1:1:1:1 full complement signal in R_3, consistent over the time-course from R_3.1 to R_3.2 to R_3.3. R_9.1B also has a clear 2:1:1:1:1:1 full complement. R_9.1 is less clear because fo the lower abundances, but may have 2 distinct strains given the 10 total E. coli variants in that sample (see previous code block). Note that R_9.1 precedes R_9.1B from the same subject. 
+Very clear 3:1:1:1:1 full complement signal in R_3, consistent over the time-course from R_3.1 to R_3.2 to R_3.3. R_9.1B also has a clear 2:1:1:1:1:1 full complement. R_9.1 is less clear because of the lower abundances, but may have 2 distinct strains given the 10 total E. coli variants in that sample (see previous code block). Note that R_9.1 precedes R_9.1B from the same subject. 
 
 Lets look a bit closer at R_9.1, shall we?
 ```{r Pacbio 9) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
@@ -250,12 +248,12 @@ plot<-ggplot(data=ecm[ecm$Sample == isam,], aes(x=SequenceVariant, y=Abundance, 
   ggtitle(paste("Sample", isam) )
 plot + theme(axis.text = element_text(size = 6))
 ```
-With high confidence, this suggest to me a high abundance strain with a 4:1:1:1 full complement of Ec2:Ec13:Ec14. With moderate confidence, this suggests to me a lower abundance strain with a 2:1:1:1:1:1 full complement of Ec6:Ec7:Ec8:Ec9:Ec10:Ec11. And, in fact, that is the strain because that was the strain subject R9 has in the next time-point!
+With high confidence, this suggests a high abundance strain with a 4:1:1:1 full complement of Ec2:Ec13:Ec14. With moderate confidence, this suggests a lower abundance strain with a 2:1:1:1:1:1 full complement of Ec6:Ec7:Ec8:Ec9:Ec10:Ec11. And, in fact, that is the strain that subject R9 has in the next time-point!
 
-The exact abundance of each strain in the sample can then be vizualized in data form:
+The exact abundance of each strain in the sample can then be visualized in data form:
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 ecdf["R_9.1",]
 ```
 Other detailed plots and vizuations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
 
-This now concludes our tutorial! Throughout this workflow we have taken raw sequencing data, proccessed it using cutting edge methods, and then vizualized that data in a pleasing and nuanced manner. Now you are ready to go out into the world of long read analysis and try this workflow on your own data. Good luck and may the force be with you! 
+This now concludes our tutorial! Throughout this workflow we have taken raw sequencing data, processed it using cutting edge methods, and then visualized that data in a pleasing and nuanced manner. Now you are ready to go out into the world of long read analysis and try this workflow on your own data. Good luck out there! 
