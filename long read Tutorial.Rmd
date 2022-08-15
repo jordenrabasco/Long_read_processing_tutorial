@@ -96,10 +96,10 @@ theme_set(theme_bw())
 
 Here we will be removing the primers and filtering out poor quality reads. We want to remove the primers as they were not part of the original sequence and thus can alter and return wrong ASVs or taxonomic assignments. Furthermore, when you have your reads in a fastq style format which is what is assumed in this workflow, each read has both an id and a sequence of quality indicators. These indicators show how sure we are that each base was identified correctly. That is to say that with low quality bases some ambiguity in the identity of the base, in that position is inherent. Therefore, we want to filter out these poor quality reads from reads that have a higher quality to ensure that the results are accurate. These two steps will ensure the quality of the reads and assist in downstream taxonomic assignments. Additionally, HiFi read orientation is mixed, meaning that some reads are in the 3' to 5' orientation and some are in the 5' to 3' orientation. This is corrected in the primer removal step, where all the reads are made to be in the same orientation. Due to this mixed orientation we will also need to reverse complement the reverse primer which can be seen in the "removePrimers" step. This is done as when the DNA amplicon is being generated the reverse primer attaches to the template DNA on the opposite strand which is in the reverse complement orientation. This means that to identify the reverse primer location we will need to look for the reverse complement of it. To ensure quality and to act as a sanity check we will want to visualize the length of the sequences after trimming to ensure that the sequences are predominantly of the lengths that we expect. 
 ```{r Pacbio 2) Filtering and Primer Removal Pacbio, message = FALSE, warning = FALSE}
-path<-file.path(base_path, "v5_long_read_tutorial/data")#sets locaiton of data for input into workflow
+path<-file.path(base_path, "long_read_tutorial/data")#sets locaiton of data for input into workflow
 #The below code allows all files with the "pattern" suffix to be found in the path1 or path2 folder location
 fn_r <- list.files(path, pattern="fastq.gz", full.names=TRUE)
-nop <- file.path(base_path, "v5_long_read_tutorial/Pacbio/noprimers", basename(fn_r)) #generates file in the noprimers folder
+nop <- file.path(base_path, "long_read_tutorial/Pacbio/noprimers", basename(fn_r)) #generates file in the noprimers folder
 prim <- removePrimers(fn_r, nop, primer.fwd=Fw_pacbio, primer.rev=dada2:::rc(Rev_pacbio), orient=TRUE,  verbose=TRUE) #removes primers from fastq input file and overwrites file in noprimers folder
 lens.fn <- lapply(nop, function(fn) nchar(getSequences(fn)))
 lens <- do.call(c, lens.fn)
@@ -109,7 +109,7 @@ There is a strong peak around 1450, so that looks good. Next we are going to fil
 
 
 ```{r Pacbio 2) read tracking, message = FALSE, warning = FALSE}
-filt <- file.path(base_path,"v5_long_read_tutorial/Pacbio/filtered", basename(fn_r)) #generates file in the filtered folder
+filt <- file.path(base_path,"long_read_tutorial/Pacbio/filtered", basename(fn_r)) #generates file in the filtered folder
 track <- filterAndTrim(nop, filt, minQ=3, minLen=1000, maxLen=1600, maxN=0, rm.phix=FALSE, maxEE=2)
 track
 ```
@@ -129,7 +129,7 @@ As we can see the list of unique sequences and their counts were generated. We c
 The DADA2 algorithm makes use of a parametric error model (err) which generates different sets of error rates for every amplicon in the dataset. The "learnErrors" method learns this error model from the data, by alternating the estimation of the error rates and conducting an inference of sample composition until they converge on a jointly consistent solution. As in many machine-learning problems, the algorithm must begin with an initial guess, for which the maximum possible error rates for this data are present (the error rates in the case where the most abundant sequence is correct and all the rest of the sequences are errors).
 ```{r Pacbio 3B) Denoising Pacbio pt2, message = FALSE, warning = FALSE}
 err <- learnErrors(drp, errorEstimationFunction=PacBioErrfun, BAND_SIZE=32, multithread=TRUE) # 10s of seconds
-saveRDS(err, file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_err.rds"))
+saveRDS(err, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_err.rds"))
 plotErrors(err)
 ```
 
@@ -144,7 +144,7 @@ For examples of how these options work you can look at the sensitivity dada2 wor
 <https://benjjneb.github.io/dada2/pseudo.html>
 ```{r Pacbio 4) Denoising Pacbio pt3, message = FALSE, warning = FALSE}
 dd <- dada(drp, err=err, BAND_SIZE=32, multithread=TRUE, pool=FALSE,OMEGA_A=(1*10^-40), DETECT_SINGLETONS=FALSE) # seconds
-saveRDS(dd, file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_dd.rds"))
+saveRDS(dd, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_dd.rds"))
 cbind(ccs=prim[,1], primers=prim[,2], filtered=track[,2], denoised=sapply(dd, function(x) sum(x$denoised)))
 st <- makeSequenceTable(dd); dim(st)
 ```
@@ -167,7 +167,7 @@ As you can see there are 38 bimera present in the dataset, which comes out to a 
 Now that we have processed our data via dada2, we can plot and pull some interesting conclusions from the data. The first thing to be done is assign taxonomic assignments to the generated ASVs. This is done by utilizing the assignTaxonomy method innate to the dada2 package. This method uses trained data to inform the algorithm which taxa belong to which taxonomic assignments. To accomplish this we need a source taxonomy file which for this sample dataset can be found here: <https://zenodo.org/record/801832/files/silva_nr_v128_train_set.fa.gz?download=1>. You will then have to move this file into the tax folder found within the tutorial folder. 
 Then we run the main function and voilà! We have taxonomies!
 ```{r Pacbio 6) Assigning Taxonomy Pacbio, message = FALSE, warning = FALSE}
-tax_path <- file.path(base_path, "v5_long_read_tutorial/tax/silva_nr_v128_train_set.fa.gz")
+tax_path <- file.path(base_path, "long_read_tutorial/tax/silva_nr_v128_train_set.fa.gz")
 tax <- assignTaxonomy(st, tax_path, multithread=TRUE)
 tax[,"Genus"] <- gsub("Escherichia/Shigella", "Escherichia", tax[,"Genus"]) # Reformat to be compatible with other data sources
 head(unname(tax))
@@ -188,12 +188,12 @@ rownames(st) <- sample.names
 sample.names
 
 #save R objects
-saveRDS(st, file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_st.rds"))
-saveRDS(tax, file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_tax_Silva128.rds"))
+saveRDS(st, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_st.rds"))
+saveRDS(tax, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Silva128.rds"))
 
 #relaod R objects 
-st <- readRDS(file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_st.rds"))
-tax <- readRDS(file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_tax_Silva128.rds"))
+st <- readRDS(file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_st.rds"))
+tax <- readRDS(file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Silva128.rds"))
 ```
 
 
@@ -201,7 +201,7 @@ tax <- readRDS(file.path(base_path, "v5_long_read_tutorial/Pacbio/RDS/Fecal_tax_
 
 Import the metadata for the samples to facilitate downstream processing and visualizations
 ```{r Pacbio 8) Sample Metadata Pacbio, message = FALSE, warning = FALSE}
-pac_path_metadata<-file.path(base_path, "v5_long_read_tutorial/fecal_metadata.csv")
+pac_path_metadata<-file.path(base_path, "long_read_tutorial/fecal_metadata.csv")
 ft <- sweep(st, 1, rowSums(st), "/")
 df<-read.csv(file = pac_path_metadata)
 
