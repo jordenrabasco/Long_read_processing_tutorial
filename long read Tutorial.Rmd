@@ -118,13 +118,13 @@ Given in the table are the reads fed into the filtering step and the output read
 
 ## Denoising
 
-The next step is arguable the most important part of the tutorial; denoising via dada2 package. This was already loaded into the R environment in the beginning of the workflow so there is no need to worry. We will also want to produce error plots and an ASV table which we can then use for taxonomic assignment. The first step in this process is to dereplicate amplicon sequences. Then we will learn error rates, save them in an R object, and plot the output error graph. If for any reason you need to stop the tutorial, the R object can then be loaded in and the workflow continued from this step.
-To check to see if the sequences were dereplicated correctly we can look at some of the unique sequence counts in one of the samples.
+The next step is arguable the most important part of the tutorial; denoising via dada2 package. This was already loaded into the R environment in the beginning of the workflow so there is no need to worry. We will also want to produce error plots and an ASV table which we can then use for taxonomic assignment. The first step in this process is to dereplicate amplicon sequences. Then we will learn error rates, save them in an R object, and plot the output error graph.
+The dereplication step takes in raw fastq sequences and separates them out based on sample identification. It also generates an output R object called 'drp' in this case which contains a table of unique sequences, and their associated counts ('uniques') as well as a quality score matrix representing all quality scores that make up each unique sequence ('qual'). The output function also contains the 'map' of each read to the index of its corresponding dereplicated unique sequences. To check to see if the sequences were dereplicated correctly we can look at some of the unique sequence counts in one of the samples.
 ```{r Pacbio 3A) Denoising Pacbio pt1, message = FALSE, warning = FALSE}
 drp <- derepFastq(filt, verbose=TRUE)
 head(drp$R11_1_P3C3.fastq.gz$uniques)
 ```
-As we can see the list of unique sequences and their counts were generated. We can also see that there is a significant relative abundance of these unique sequences. This allows the "learnerrors" module to run appropriately. If there wasn't enough abundance for each unique amplicon then the error model wouldn't run correctly. However, this doesn't seem to be the case here and we can therefore assume that the dereplicaiton procedure was a success! If you wish to check the other samples you can switch the sample name in the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to whichever sample you would like to view. 
+As we can see the list of unique sequences and their associated counts were generated appropiratly. To investigate further we can print out the other, features of the output object by changing the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to  "drp$R11_1_P3C3.fastq.gz$quals" or "drp$R11_1_P3C3.fastq.gz$map". By extension, if you wish to check the other samples you can switch the sample name in the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to whichever sample you would like to view. 
 
 The DADA2 algorithm makes use of a parametric error model (err) which generates different sets of error rates for every amplicon in the dataset. The "learnErrors" method learns this error model from the data, by alternating the estimation of the error rates and conducting an inference of sample composition until they converge on a jointly consistent solution. As in many machine-learning problems, the algorithm must begin with an initial guess, for which the maximum possible error rates for this data are present (the error rates in the case where the most abundant sequence is correct and all the rest of the sequences are errors).
 ```{r Pacbio 3B) Denoising Pacbio pt2, message = FALSE, warning = FALSE}
@@ -148,7 +148,7 @@ saveRDS(dd, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_dd.rds"))
 cbind(ccs=prim[,1], primers=prim[,2], filtered=track[,2], denoised=sapply(dd, function(x) sum(x$denoised)))
 st <- makeSequenceTable(dd); dim(st)
 ```
-As you can see the output table above shows the read tracking through the various steps of the workflow up until this point, such as read numbers for ccs, primer containing, filtered, and denoised reads.
+As you can see the output table above shows the read tracking through the various steps of the workflow up until this point, such as read numbers for ccs, primer containing, filtered, and denoised reads. Additionally, if for any reason you need to stop the tutorial, the saved R object can then be loaded in and the workflow continued from this step.
 
 ## Identifying and Removing chimeras
 
