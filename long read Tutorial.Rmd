@@ -164,29 +164,21 @@ As you can see there are 38 bimera present in the dataset, which comes out to a 
 
 ## Assigning Taxonomy
 
-Now that we have processed our data via dada2, we can plot and pull some interesting conclusions from the data. The first thing to be done is assign taxonomic assignments to the generated ASVs. This is done by utilizing the assignTaxonomy method innate to the dada2 package. This method uses trained data to inform the algorithm which taxa belong to which taxonomic assignments. To accomplish this we need a source taxonomy file which for this sample dataset can be found here: <https://zenodo.org/record/801832/files/silva_nr_v128_train_set.fa.gz?download=1>. You will then have to move this file into the tax folder found within the tutorial folder. 
+Now that we have processed our data via dada2, we can plot and pull some interesting conclusions from the data. The first thing to be done is assign taxonomic assignments to the generated ASVs. This is done by utilizing the assignTaxonomy method innate to the dada2 package. This method uses trained data to inform the algorithm which taxa belong to which taxonomic assignments. To accomplish this we need a source taxonomy file which for this sample dataset can be found here: <https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz?download=1>. You will then have to move this file into the tax folder found within the tutorial folder. 
 Then we run the main function and voilà! We have taxonomies!
 ```{r Pacbio 6) Assigning Taxonomy Pacbio, message = FALSE, warning = FALSE}
-tax_path <- file.path(base_path, "long_read_tutorial/tax/silva_nr_v128_train_set.fa.gz")
+tax_path <- file.path(base_path, "long_read_tutorial/tax/silva_nr99_v138.1_train_set.fa.gz")
 tax <- assignTaxonomy(st, tax_path, multithread=TRUE)
-tax[,"Genus"] <- gsub("Escherichia/Shigella", "Escherichia", tax[,"Genus"]) # Reformat to be compatible with other data sources
+tax[,"Genus"] <- gsub("Escherichia-Shigella", "Escherichia", tax[,"Genus"]) # Reformat to be compatible with other data sources
 head(unname(tax))
 ```
 
 
 ## Data Management
 
-In this next section we will be extracting the file sample names for downstream visualizations and then saving the processed data as R objects for future analysis. This will allow easy access for future workflows. 
+In this next section we will be saving our processed data as R objects.  An Rdata file either an '.Rdata' or '.rds' file can be used to store R objects in a format native to R. There are multiple advantages of saving this way when contrasted with non-native storage approaches including; faster to restoration of the data to R and R specific information encoded in the data (e.g., attributes, variable types, etc) is preserved. The files are saved here in case you would like to stop the tutorial here or continue on another analysis path.For those wishing to continue on with the tutorial the data is also reloaded into the R environment. 
 
 ```{r Pacbio 7) Data clean up Pacbio, message = FALSE, warning = FALSE}
-sample.names <- sapply(strsplit(fn_r, "/"), function(x) paste(x[length(x)], sep="_"))
-sample.names <- sapply(strsplit(sample.names, "_"), function(x) paste(x[1],x[2], sep="_"))
-sample.names<- gsub("_", ".", sample.names)
-sample.names<- gsub("^R", "R_", sample.names)
-sample.names <- gsub(".fastq.gz", "", sample.names)
-rownames(st) <- sample.names
-sample.names
-
 #save R objects
 saveRDS(st, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_st.rds"))
 saveRDS(tax, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Silva128.rds"))
@@ -204,14 +196,9 @@ Import the metadata for the samples to facilitate downstream processing and visu
 pac_path_metadata<-file.path(base_path, "long_read_tutorial/fecal_metadata.csv")
 ft <- sweep(st, 1, rowSums(st), "/")
 df<-read.csv(file = pac_path_metadata)
-
-df$SampleID <- gsub("_", ".", df$X)
-df$X<- gsub("_", ".", df$X)
-df$SampleID <- gsub("^R", "R_", df$SampleID)
-df$X <- gsub("^R", "R_", df$X)
 rownames(df) <- df$SampleID
-#df <- df[sample.names2,-1]
 head(df)
+rownames(st)<-gsub(".fastq.gz", "", rownames(st))
 ```
 
 
@@ -220,7 +207,7 @@ head(df)
 In this tutorial dataset let’s see if we can achieve reconstruction of E. coli strains. This is done by retrieving the sequences of the ASVs and then checking those sequences against their taxonomic assignments. This is then printed out in a tabular format. 
 ```{r Pacbio 9) Identify Ecoli sequences Pacbio, message = FALSE, warning = FALSE}
 sq <- getSequences(st)
-is.ecoli <- tax[,"Genus"] %in% "Esherichica/Shigella"
+is.ecoli <- tax[,"Genus"] %in% "Escherichia"
 sqec <- sq[is.ecoli]
 which(is.ecoli)
 rowSums(st[,is.ecoli]>0)
@@ -236,13 +223,13 @@ colnames(ecdf) <- names(sqec)
 ecdf <- cbind(ecdf, Sample=rownames(st))
 ecm <- melt(ecdf, id.vars="Sample", value.name="Abundance", variable.name="SequenceVariant")
 plot<-ggplot(data=ecm, aes(x=Sample, y=Abundance, color=SequenceVariant)) + geom_point()
-plot+theme(axis.text = element_text(size = 8))
+plot+ theme(axis.text = element_text(size=8), axis.text.x = element_text(angle=90, hjust=1)) 
 ```
 Very clear 3:1:1:1:1 full complement signal in R_3, consistent over the time-course from R_3.1 to R_3.2 to R_3.3. R_9.1B also has a clear 2:1:1:1:1:1 full complement. R_9.1 is less clear because of the lower abundances, but may have 2 distinct strains given the 10 total E. coli variants in that sample (see previous code block). Note that R_9.1 precedes R_9.1B from the same subject. 
 
 Lets look a bit closer at R_9.1, shall we?
 ```{r Pacbio 9) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
-isam <- "R_9.1"
+isam <- "R9_1_P3C3"
 plot<-ggplot(data=ecm[ecm$Sample == isam,], aes(x=SequenceVariant, y=Abundance, fill=SequenceVariant)) + 
   geom_col(width=0.4) + scale_y_continuous(breaks=seq(0,250,10)) + 
   ggtitle(paste("Sample", isam) )
@@ -252,7 +239,7 @@ With high confidence, this suggests a high abundance strain with a 4:1:1:1 full 
 
 The exact abundance of each strain in the sample can then be visualized in data form:
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
-ecdf["R_9.1",]
+ecdf["R9_1_P3C3",]
 ```
 Other detailed plots and vizuations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
 
