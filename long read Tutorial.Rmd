@@ -206,7 +206,7 @@ rownames(st)<-gsub(".fastq.gz", "", rownames(st))
 
 ## Inspect E.coli
 
-In this tutorial dataset let’s see if we can achieve reconstruction of E. coli strains. This is done by retrieving the sequences of the ASVs and then checking those sequences against their taxonomic assignments. This is then printed out in a tabular format. 
+Okay now that we have denoisd our data it is time to draw some conclusions and visualizations from the work we have just done. To see how many E. coli strains are present per sample we need to first retrieve the sequences of the ASVs,  which are stored in the 'st' table and then extracted via the 'getseqeunces()' method. Then to check to see which sequences were identified as E. coli we search for 'Escherichia' or 'E.coli' in the table generated in the previous step. After this we sum up all the identified E.coli rows and print out the table as can be seen below. 
 ```{r Pacbio 9) Identify Ecoli sequences Pacbio, message = FALSE, warning = FALSE}
 sq <- getSequences(st)
 is.ecoli <- tax[,"Genus"] %in% "Escherichia"
@@ -214,7 +214,7 @@ sqec <- sq[is.ecoli]
 which(is.ecoli)
 rowSums(st[,is.ecoli]>0)
 ```
-There are several ASVs that are identified as E.coli but since we expect 3-6 unique alleles per strain, there are probably only 3-4 strains present. 
+As you can see there are some samples that have several ASVs that were identified as E.coli. This is unsurprising as within a microbial population containing E.coli there are excepted to be multiple strains present(3-6). This is due to the relatively high mutation rate and fast generation turnover inherit in most bacteria. This evolutionary concept allows for the generation of multiple alleles belonging to the same taxa within a population. These alleles allow for differentiation of the E.coli population into different strains, which are picked out and presented by the workflow detailed above.
 
 Now we can visualize the distribution of the E.coli variants
 ```{r Pacbio 8) Visualize Ecoli distribution Pacbio, message = FALSE, warning = FALSE}
