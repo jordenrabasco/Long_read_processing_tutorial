@@ -239,7 +239,7 @@ plot + theme(axis.text = element_text(size = 6))
 ```
 As we can see the plot comes our exactly as we predicted and gives a nice overview of which strains are present in the given sample. 
 
-The exact abundance of each strain in the sample can then be visualized in data form:
+The exact abundance of each strain shown in the plot above can then be seen in a tabular format. To augment this to fit your own data you will need to change 'ecdf["R9_1_P3C3",]' to include the name of the sample you would like to see in a table as it appears on the graph above. This table and the above graph are displaying the relative abundances of each strain in the sample meaning that with an incomplete sampling of a microbial population these are the amount of each strain present in that sample. Thus we can infer that in the full population these relative abundances hold true (i.e. that strain Ec3 will have a relative abundance ~15x that of Ec7)
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 ecdf["R9_1_P3C3",]
 ```
