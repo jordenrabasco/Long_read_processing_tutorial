@@ -192,7 +192,8 @@ tax <- readRDS(file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Sil
 
 ## Sample metadata loading
 
-Import the metadata for the samples to facilitate downstream processing and visualizations
+Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata for this tutorial will include 4 distinct columns in a tab delimited excel format. The columns of tis metadata file are as follows: weight, SampleOrder, Subject, and SampleID each in the first row of the excel sheet. However this column titles start in the second column or column B if working in excel. The first cell of the first row is to be blank with the sample id present for each of the rows in the first column. This data is then repeated in the SampleID column as well. 
+
 ```{r Pacbio 8) Sample Metadata Pacbio, message = FALSE, warning = FALSE}
 pac_path_metadata<-file.path(base_path, "long_read_tutorial/fecal_metadata.csv")
 ft <- sweep(st, 1, rowSums(st), "/")
