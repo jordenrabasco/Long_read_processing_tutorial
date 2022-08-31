@@ -227,9 +227,9 @@ ecm <- melt(ecdf, id.vars="Sample", value.name="Abundance", variable.name="Seque
 plot<-ggplot(data=ecm, aes(x=Sample, y=Abundance, color=SequenceVariant)) + geom_point()
 plot+ theme(axis.text = element_text(size=8), axis.text.x = element_text(angle=90, hjust=1)) 
 ```
-Very clear 3:1:1:1:1 full complement signal in R_3, consistent over the time-course from R_3.1 to R_3.2 to R_3.3. R_9.1B also has a clear 2:1:1:1:1:1 full complement. R_9.1 is less clear because of the lower abundances, but may have 2 distinct strains given the 10 total E. coli variants in that sample (see previous code block). Note that R_9.1 precedes R_9.1B from the same subject. 
+As you can see from the graph above each Ecoli variant denoted as Ec1,Ec2,ect, are identified and denoted on the graph along with their abundance on the y-axis. When looking at the test data you can tell the subject R3 has similar strain presence across all three time point collections allbeit in differing abundances. It is also worth noting that sample R9_1 has 10 strains present but in relatively low abundances making the differentiation of the strain plotting more difficult. To remedy this we will need to take a closer look at that sample individually. 
 
-Lets look a bit closer at R_9.1, shall we?
+To look closer at an individual sample when not using the tutorial you will only need to change the line 'isam <- "R9_1_P3C3"' to whatever sample you want to see in more detail. For example if I wanted to see sample R3_1_P3C3 in more detail I would use 'isam <- "R3_1_P3C3"' instead of the given line of code. In the graph presented below we are showing the adundances of each strain within a sample as a bar graph instead of a stacked dot plot as seen above. 
 ```{r Pacbio 9) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 isam <- "R9_1_P3C3"
 plot<-ggplot(data=ecm[ecm$Sample == isam,], aes(x=SequenceVariant, y=Abundance, fill=SequenceVariant)) + 
@@ -237,12 +237,12 @@ plot<-ggplot(data=ecm[ecm$Sample == isam,], aes(x=SequenceVariant, y=Abundance, 
   ggtitle(paste("Sample", isam) )
 plot + theme(axis.text = element_text(size = 6))
 ```
-With high confidence, this suggests a high abundance strain with a 4:1:1:1 full complement of Ec2:Ec13:Ec14. With moderate confidence, this suggests a lower abundance strain with a 2:1:1:1:1:1 full complement of Ec6:Ec7:Ec8:Ec9:Ec10:Ec11. And, in fact, that is the strain that subject R9 has in the next time-point!
+As we can see the plot comes our exactly as we predicted and gives a nice overview of which strains are present in the given sample. 
 
 The exact abundance of each strain in the sample can then be visualized in data form:
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 ecdf["R9_1_P3C3",]
 ```
-Other detailed plots and vizuations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
+Other detailed plots and visualizations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
 
 This now concludes our tutorial! Throughout this workflow we have taken raw sequencing data, processed it using cutting edge methods, and then visualized that data in a pleasing and nuanced manner. Now you are ready to go out into the world of long read analysis and try this workflow on your own data. Good luck out there! 
