@@ -125,10 +125,27 @@ The dereplication step takes in raw fastq sequences and separates them out based
 drp <- derepFastq(filt, verbose=TRUE)
 head(drp$R11_1_P3C3.fastq.gz$uniques)
 ```
-As we can see the list of unique sequences and their associated counts were generated appropriately. We determine this by seeing that there are many copies of each unique sequence which is required in order to run dada2's error model. If the data had only a few counts of each unique sequence then the data would be unsuited for dada2 processing. To investigate this data further we can print out the other, features of the output object by changing the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to  "drp$R11_1_P3C3.fastq.gz$quals" or "drp$R11_1_P3C3.fastq.gz$map". By extension, if you wish to check the other samples you can switch the sample name in the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to whichever sample you would like to view. 
+To investigate this data further we can print out the other, features of the output object by changing the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to  "drp$R11_1_P3C3.fastq.gz$quals" or "drp$R11_1_P3C3.fastq.gz$map". By extension, if you wish to check the other samples you can switch the sample name in the code "head(drp$R11_1_P3C3.fastq.gz$uniques)" to whichever sample you would like to view. 
+
+To determine whether these data are appropriate for dada2 processing we will have to do some sleuthing. This is accomplished by determining how many unique sequences were identified from the total read number for a given sample. Some unique sequence need to have many copies present in order to run  dada2's error model. If the data had only a few counts of each unique sequence then the data would be unsuited for dada2 processing. For example if your data produces 1000 unique sequences from 1023 total reads then it would be safe to say that the data is unsuited for this workflow and dada2 processing in general. 
+```{r Pacbio 3B) Denoising Pacbio pt2 Sanity Check, message = FALSE, warning = FALSE}
+
+reads_out_derep<-c()
+uniques_out_derep<-c()
+sample_name<-c()
+for (x in 1:length(rownames(track))) {
+  uniques_out_derep<-c(uniques_out_derep,length(drp[[x]]$uniques))
+  reads_out_derep<-c(reads_out_derep,sum(drp[[x]]$uniques))
+  sample_name<-c(sample_name,rownames(track)[x])
+}
+derep_track<-cbind(reads_out_derep, uniques_out_derep)
+rownames(derep_track)<-sample_name
+derep_track
+```
+As we can see from the table above the tutorial data have many more reads for each sample than unique sequences identified, indicating that the data is well suired for the DADA2 algorithm. 
 
 The DADA2 algorithm makes use of a parametric error model (err) which generates different sets of error rates for every amplicon in the dataset. The 'learnErrors' method learns this error model from the data, by alternating the estimation of the error rates and conducting an inference of sample composition, until the sequences converge on a jointly consistent solution. As in many machine-learning problems, the algorithm must begin with an initial guess, for which the maximum possible error rates for this data are present (the error rates in the case where the most abundant sequence is correct and all the rest of the sequences are errors).
-```{r Pacbio 3B) Denoising Pacbio pt2, message = FALSE, warning = FALSE}
+```{r Pacbio 3C) Denoising Pacbio pt3, message = FALSE, warning = FALSE}
 err <- learnErrors(drp, errorEstimationFunction=PacBioErrfun, BAND_SIZE=32, multithread=TRUE) # 10s of seconds
 saveRDS(err, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_err.rds"))
 plotErrors(err)
@@ -143,7 +160,7 @@ The last option that we will mention here is "DETECT_SINGLETONS", which toggles 
 For more in-depth information regarding these options you can read the dada2 documentation found here: <https://www.bioconductor.org/packages/devel/bioc/manuals/dada2/man/dada2.pdf>
 For examples of how these options work you can look at the sensitivity dada2 workflow found here:
 <https://benjjneb.github.io/dada2/pseudo.html>
-```{r Pacbio 4) Denoising Pacbio pt3, message = FALSE, warning = FALSE}
+```{r Pacbio 4) Denoising Pacbio pt4, message = FALSE, warning = FALSE}
 dd <- dada(drp, err=err, BAND_SIZE=32, multithread=TRUE, pool=FALSE,OMEGA_A=(1*10^-40), DETECT_SINGLETONS=FALSE) # seconds
 saveRDS(dd, file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_dd.rds"))
 cbind(ccs=prim[,1], primers=prim[,2], filtered=track[,2], denoised=sapply(dd, function(x) sum(x$denoised)))
