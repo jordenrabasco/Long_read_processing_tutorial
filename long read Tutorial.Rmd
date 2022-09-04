@@ -209,7 +209,7 @@ tax <- readRDS(file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Sil
 
 ## Sample metadata loading
 
-Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata for this tutorial will include 4 distinct columns in a tab delimited excel format. The columns of tis metadata file are as follows: weight, SampleOrder, Subject, and SampleID each in the first row of the excel sheet. However this column titles start in the second column or column B if working in excel. The first cell of the first row is to be blank with the sample id present for each of the rows in the first column. This data is then repeated in the SampleID column as well. 
+Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata for this tutorial will include 4 distinct columns in a tab delimited excel format. The columns of this metadata file are as follows: weight, SampleOrder, Subject, and SampleID each in the first row of the excel sheet. However this column titles start in the second column or column B if working in excel. The first cell of the first row is to be blank with the sample id present for each of the rows in the first column. This data is then repeated in the SampleID column as well. 
 
 ```{r Pacbio 8) Sample Metadata Pacbio, message = FALSE, warning = FALSE}
 pac_path_metadata<-file.path(base_path, "long_read_tutorial/fecal_metadata.csv")
@@ -223,7 +223,7 @@ rownames(st)<-gsub(".fastq.gz", "", rownames(st))
 
 ## Inspect E.coli
 
-Okay now that we have denoisd our data it is time to draw some conclusions and visualizations from the work we have just done. To see how many E. coli strains are present per sample we need to first retrieve the sequences of the ASVs,  which are stored in the 'st' table and then extracted via the 'getseqeunces()' method. Then to check to see which sequences were identified as E. coli we search for 'Escherichia' or 'E.coli' in the table generated in the previous step. After this we sum up all the identified E.coli rows and print out the table as can be seen below. 
+Okay now that we have denoisd our data it is time to draw some conclusions and visualizations from the work we have just done. To see how many E. coli strains are present per sample we need to first retrieve the sequences of the ASVs,  which are stored in the 'st' table and then extracted via the 'getseqeunces()' method. Then to check to see which sequences were identified as E.coli we search for 'Escherichia' or 'E.coli' in the table generated in the previous step. After this we sum up all the identified E.coli rows and print out the table as can be seen below. 
 ```{r Pacbio 9) Identify Ecoli sequences Pacbio, message = FALSE, warning = FALSE}
 sq <- getSequences(st)
 is.ecoli <- tax[,"Genus"] %in% "Escherichia"
@@ -231,7 +231,8 @@ sqec <- sq[is.ecoli]
 which(is.ecoli)
 rowSums(st[,is.ecoli]>0)
 ```
-As you can see there are some samples that have several ASVs that were identified as E.coli. This is unsurprising as within a microbial population containing E.coli there are excepted to be multiple strains present(3-6). This is due to the relatively high mutation rate and fast generation turnover inherit in most bacteria. This evolutionary concept allows for the generation of multiple alleles belonging to the same taxa within a population. These alleles allow for differentiation of the E.coli population into different strains, which are picked out and presented by the workflow detailed above.
+
+As you can see there are some samples that have several ASVs that were identified as E.coli alleles.This is unsurprising as the data we are dealing with in the tutorial is 16S longread sequencing data meaning that we would expect anywhere from 1-7 different alleles to be present in a sample if there is one E.coli strain. This is due to a standard E.coli strain having multiple (7) 16S operons present in their genome. These operons can be duplications of each other or they could be different leading to the the amount of expected alleles to be from 1-7. If you find that there were a large amount of alleles identified from one sample (>21) it is likely that there is a contamination issue happening at the sequencing level. It is unlikely that there would be a large number of strains in a single sample as between strains the 16S operons are relatively conserved. Additionally it is worth noting that short read sequencing cannot typically resolve these different allelic differences within a strain.   
 
 Now we can visualize the distribution of the E.coli variants
 ```{r Pacbio 8) Visualize Ecoli distribution Pacbio, message = FALSE, warning = FALSE}
