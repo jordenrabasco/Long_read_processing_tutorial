@@ -255,12 +255,13 @@ plot<-ggplot(data=ecm[ecm$Sample == isam,], aes(x=SequenceVariant, y=Abundance, 
   ggtitle(paste("Sample", isam) )
 plot + theme(axis.text = element_text(size = 6))
 ```
-As we can see the plot comes our exactly as we predicted and gives a nice overview of which strains are present in the given sample. 
+When analyzing the graph for the tutorial data and your own data it is important to keep in mind that an Ecoli genome has 7 copies of a 16S operon some of which maybe exact duplicates. With this in mind we can assess the graph and say that since Ec3 has ~4x abundance of Ec17, Ec18, and Ec19 then they are probably sourced from the same strain where there are 4 exact copies of the Ec3 allele in the genome and one copy of the other given alleles. You can look for patterns like this in your own data to pull out relevant conclusions about the present strains. 
 
-The exact abundance of each strain shown in the plot above can then be seen in a tabular format. To augment this to fit your own data you will need to change 'ecdf["R9_1_P3C3",]' to include the name of the sample you would like to see in a table as it appears on the graph above. This table and the above graph are displaying the relative abundances of each strain in the sample meaning that with an incomplete sampling of a microbial population these are the amount of each strain present in that sample. Thus we can infer that in the full population these relative abundances hold true (i.e. that strain Ec3 will have a relative abundance ~15x that of Ec7)
+To look further into this the exact abundance of each strain shown in the plot above can then be seen in a tabular format. To augment this to fit your own data you will need to change 'ecdf["R9_1_P3C3",]' to include the name of the sample you would like to see in a table as it appears on the graph above. This table and the above graph are displaying the relative abundances of each strain in the sample meaning that with an incomplete sampling of a microbial population these are the amount of each strain present in that sample. Thus we can infer that in the full population these relative abundances hold true (i.e. that strain Ec3 will have a relative abundance ~15x that of Ec7)
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 ecdf["R9_1_P3C3",]
 ```
+
 Other detailed plots and visualizations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
 
 This now concludes our tutorial! Throughout this workflow we have taken raw sequencing data, processed it using cutting edge methods, and then visualized that data in a pleasing and nuanced manner. Now you are ready to go out into the world of long read analysis and try this workflow on your own data. Good luck out there! 
