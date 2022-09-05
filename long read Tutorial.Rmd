@@ -262,6 +262,33 @@ To look further into this the exact abundance of each strain shown in the plot a
 ecdf["R9_1_P3C3",]
 ```
 
+```{r Pacbio 11) Ecoli: over time Pacbio, message = FALSE, warning = FALSE}
+ecm$SampleOrder <- df$SampleOrder[ecm$Sample]
+ecm$Timepoint <- paste("Timepoint", ecm$SampleOrder)
+ecm$Subject <- df$Subject[ecm$Sample]
+ecm$SubjectLabel <- paste("Subject", df$Subject[ecm$Sample])
+ecmp <- ecm[ecm$Sample %in% c("R_3.1", "R_3.2", "R_3.3", "R_9.1", "R_9.1B", "R_9.2"),]
+ecmp$SequenceVariant <- as.character(ecmp$SequenceVariant)
+ecmp <- ecmp[ecmp$Abundance > 0,]
+xx.R3 <- c(Ec1=1, Ec2=2, Ec3=3, Ec4=4, Ec5=5) # Strain 1
+PAD <- 8 # Between strain pad
+xx.R9 <- c(Ec2=1+PAD, Ec12=2+PAD, Ec13=3+PAD, Ec14=4+PAD, # Strain 2
+           Ec6=1+2*PAD, Ec7=2+2*PAD, Ec8=3+2*PAD, Ec9=4+2*PAD, Ec10=5+2*PAD, Ec11=6+2*PAD) # Strain 3
+ecmp$X <- 0
+is.R3 <- ecmp$Subject == "R3"; ecmp$X[is.R3] <- xx.R3[ecmp$SequenceVariant[is.R3]]
+is.R9 <- ecmp$Subject == "R9"; ecmp$X[is.R9] <- xx.R9[ecmp$SequenceVariant[is.R9]]
+# Force desired facet ymax limits with a custom data.frame
+dflim <- data.frame(X=c(1, 1), Abundance=c(3000, 1500), 
+                    SequenceVariant=c("Ec1", "Ec1"),
+                    SubjectLabel=c("Subject R3", "Subject R9"), Timepoint=c("Timepoint 1", "Timepoint 1"))
+p.ecoli <- ggplot(data=ecmp, aes(x=X, y=Abundance, color=SequenceVariant)) + geom_point() + 
+  facet_grid(SubjectLabel~Timepoint, scales="free_y") +
+  xlab("E. coli ASVs") + theme(axis.ticks.x=element_blank(), axis.text.x = element_blank()) +
+  theme(panel.grid.major.x=element_blank(), panel.grid.minor.x=element_blank()) + 
+  geom_blank(data=dflim) +
+  guides(color=FALSE)
+p.ecoli
+```
 Other detailed plots and visualizations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
 
 This now concludes our tutorial! Throughout this workflow we have taken raw sequencing data, processed it using cutting edge methods, and then visualized that data in a pleasing and nuanced manner. Now you are ready to go out into the world of long read analysis and try this workflow on your own data. Good luck out there! 
