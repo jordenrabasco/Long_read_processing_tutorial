@@ -209,13 +209,13 @@ tax <- readRDS(file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Sil
 
 ## Sample metadata loading
 
-Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata for this tutorial will include 4 distinct columns in a tab delimited excel format. The columns of this metadata file are as follows: weight, SampleOrder, Subject, and SampleID each in the first row of the excel sheet. However this column titles start in the second column or column B if working in excel. The first cell of the first row is to be blank with the sample id present for each of the rows in the first column. This data is then repeated in the SampleID column as well. 
+Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata for this tutorial will include 4 distinct columns in a tab delimited excel format. The columns of this metadata file are as follows: SampleOrder, Subject, and SampleID each in the first row of the excel sheet. However the column titles start in the second column or column B if working in excel. The first cell of the first row is to be blank with the sample id present for each of the rows in the first column. Make sure the the rownames for both the df object and the st object are the same to facilitate further analysis. 
 
 ```{r Pacbio 8) Sample Metadata Pacbio, message = FALSE, warning = FALSE}
 pac_path_metadata<-file.path(base_path, "long_read_tutorial/fecal_metadata.csv")
 ft <- sweep(st, 1, rowSums(st), "/")
 df<-read.csv(file = pac_path_metadata)
-rownames(df) <- df$SampleID
+rownames(df) <- df$X
 head(df)
 rownames(st)<-gsub(".fastq.gz", "", rownames(st))
 ```
@@ -261,26 +261,25 @@ To look further into this the exact abundance of each strain shown in the plot a
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 ecdf["R9_1_P3C3",]
 ```
-
+Here we show a plot of the present Ecoli strains of a given subject across time points. For this section make sure that your metadata file is in the same format as the given one in this tutoiral. This plot will show all of the present strains across all time points color coded. With the abundanace on the y-axis and the differing Ecoli ASVs on the x-axis. 
 ```{r Pacbio 11) Ecoli: over time Pacbio, message = FALSE, warning = FALSE}
-ecm$SampleOrder <- df$SampleOrder[ecm$Sample]
+sample_order_arr<-c()
+sample_sub_arr<-c()
+for (sample_id in ecm$Sample) {
+  sample_order_arr<-c(sample_order_arr, df[df$X == sample_id,]$SampleOrder)
+  sample_sub_arr<-c(sample_sub_arr, df[df$X == sample_id,]$Subject)
+}
+ecm$SampleOrder<-cbind(sample_order_arr)
+ecm$Subject<-cbind(sample_sub_arr)
 ecm$Timepoint <- paste("Timepoint", ecm$SampleOrder)
-ecm$Subject <- df$Subject[ecm$Sample]
-ecm$SubjectLabel <- paste("Subject", df$Subject[ecm$Sample])
-ecmp <- ecm[ecm$Sample %in% c("R_3.1", "R_3.2", "R_3.3", "R_9.1", "R_9.1B", "R_9.2"),]
+
+ecmp <- ecm[ecm$Subject %in% c("R3"),] #change "R3" to whichever subject you would like plotted across time
 ecmp$SequenceVariant <- as.character(ecmp$SequenceVariant)
 ecmp <- ecmp[ecmp$Abundance > 0,]
-xx.R3 <- c(Ec1=1, Ec2=2, Ec3=3, Ec4=4, Ec5=5) # Strain 1
-PAD <- 8 # Between strain pad
-xx.R9 <- c(Ec2=1+PAD, Ec12=2+PAD, Ec13=3+PAD, Ec14=4+PAD, # Strain 2
-           Ec6=1+2*PAD, Ec7=2+2*PAD, Ec8=3+2*PAD, Ec9=4+2*PAD, Ec10=5+2*PAD, Ec11=6+2*PAD) # Strain 3
-ecmp$X <- 0
-is.R3 <- ecmp$Subject == "R3"; ecmp$X[is.R3] <- xx.R3[ecmp$SequenceVariant[is.R3]]
-is.R9 <- ecmp$Subject == "R9"; ecmp$X[is.R9] <- xx.R9[ecmp$SequenceVariant[is.R9]]
-# Force desired facet ymax limits with a custom data.frame
+ecmp$X<-gsub("Ec", "", ecmp$SequenceVariant)
 dflim <- data.frame(X=c(1, 1), Abundance=c(3000, 1500), 
-                    SequenceVariant=c("Ec1", "Ec1"),
-                    SubjectLabel=c("Subject R3", "Subject R9"), Timepoint=c("Timepoint 1", "Timepoint 1"))
+                    SequenceVariant=c(""),
+                    SubjectLabel=c("Subject"), Timepoint=c("Timepoint 1"))
 p.ecoli <- ggplot(data=ecmp, aes(x=X, y=Abundance, color=SequenceVariant)) + geom_point() + 
   facet_grid(SubjectLabel~Timepoint, scales="free_y") +
   xlab("E. coli ASVs") + theme(axis.ticks.x=element_blank(), axis.text.x = element_blank()) +
@@ -288,7 +287,10 @@ p.ecoli <- ggplot(data=ecmp, aes(x=X, y=Abundance, color=SequenceVariant)) + geo
   geom_blank(data=dflim) +
   guides(color=FALSE)
 p.ecoli
+
 ```
+As we can see the abundance magnitudes change and are available across all three time points, however the ASV abundances relative to one another are relatively stable. This is to be expected baring any drastic intervention, or event which could change the relative abundance of the microbial species in the microbiome. Raw abundance counts can be very variable from sequencing run to sequencing run depending on a variety of factors. By looking at the relative abundances instead we can get a clearer picture of the microbial community free of the artifacts on sequencing. 
+
 Other detailed plots and visualizations can be seen here <https://benjjneb.github.io/LRASManuscript/LRASms_fecal.html>
 
 This now concludes our tutorial! Throughout this workflow we have taken raw sequencing data, processed it using cutting edge methods, and then visualized that data in a pleasing and nuanced manner. Now you are ready to go out into the world of long read analysis and try this workflow on your own data. Good luck out there! 
