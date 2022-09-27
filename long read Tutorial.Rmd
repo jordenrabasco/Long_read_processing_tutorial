@@ -209,7 +209,7 @@ tax <- readRDS(file.path(base_path, "long_read_tutorial/Pacbio/RDS/Fecal_tax_Sil
 
 ## Sample metadata loading
 
-Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata for this tutorial will include 4 distinct columns in a tab delimited excel format. The columns of this metadata file are as follows: SampleOrder, Subject, and SampleID each in the first row of the excel sheet. However the column titles start in the second column or column B if working in excel. The first cell of the first row is to be blank with the sample id present for each of the rows in the first column. Make sure the the rownames for both the df object and the st object are the same to facilitate further analysis. 
+Import the metadata for the samples to facilitate downstream processing and visualizations. The metadata file consists of a 4 column csv file with headers on the first line of the file. The column headers are as follows: X, SampleOrder, Subject, and SampleID. Make sure the the rownames for both the df object and the st object are the same to facilitate further analysis. This will be the sample name for the graphing analysis which is generated from the input file names removing the ".fastq.gz" extension. 
 
 ```{r Pacbio 8) Sample Metadata Pacbio, message = FALSE, warning = FALSE}
 pac_path_metadata<-file.path(base_path, "long_read_tutorial/fecal_metadata.csv")
@@ -261,7 +261,7 @@ To look further into this the exact abundance of each strain shown in the plot a
 ```{r Pacbio 10) Ecoli: In depth view Pacbio, message = FALSE, warning = FALSE}
 ecdf["R9_1_P3C3",]
 ```
-Here we show a plot of the present Ecoli strains of a given subject across time points. For this section make sure that your metadata file is in the same format as the given one in this tutoiral. This plot will show all of the present strains across all time points color coded. With the abundanace on the y-axis and the differing Ecoli ASVs on the x-axis. 
+Here we show a plot of the present Ecoli ASVs of a given subject across time points. For this section make sure that your metadata file is in the same format as the given one in this tutoiral. This plot will show all of the present ASVs across all time points color coded. With the abundance on the y-axis and the differing Ecoli ASVs on the x-axis. 
 ```{r Pacbio 11) Ecoli: over time Pacbio, message = FALSE, warning = FALSE}
 sample_order_arr<-c()
 sample_sub_arr<-c()
